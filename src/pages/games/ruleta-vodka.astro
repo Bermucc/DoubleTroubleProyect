@@ -1,0 +1,408 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Ruleta Vodka - Double Trouble Company" description="Apuesta rojo o negro. Si aciertas... ¡bebes!">
+
+  <section class="min-h-screen pt-24 pb-16 px-4 flex flex-col items-center justify-center gap-6">
+
+    <div class="text-center">
+      <h1 class="text-3xl sm:text-4xl font-black text-dt-green tracking-wider uppercase">Ruleta Vodka</h1>
+      <p class="text-xs text-zinc-500 mt-1">Elige color, gira la ruleta, y bebe si aciertas</p>
+    </div>
+
+    <!-- ===== WHEEL CONTAINER ===== -->
+    <div class="relative" id="wheel-container">
+      <div id="wheel" class="wheel"></div>
+      <!-- Pointer -->
+      <div class="pointer"></div>
+      <!-- Center hub -->
+      <div class="wheel-hub"></div>
+    </div>
+
+    <!-- ===== BET SELECTION ===== -->
+    <div class="flex items-center gap-4">
+      <button id="bet-red" class="bet-btn bet-red active">
+        <span class="w-4 h-4 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span>
+        Rojo
+      </button>
+      <button id="bet-black" class="bet-btn bet-black">
+        <span class="w-4 h-4 rounded-full bg-gray-900 border border-white/20 shadow-[0_0_8px_rgba(255,255,255,0.1)]"></span>
+        Negro
+      </button>
+    </div>
+
+    <!-- ===== SPIN BUTTON ===== -->
+    <button id="spin-btn" class="glass-spin group relative px-10 py-3 rounded-full text-base font-bold text-white uppercase tracking-wider disabled:opacity-30 disabled:cursor-not-allowed">
+      <span class="relative z-10 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Girar
+      </span>
+    </button>
+
+    <!-- ===== RESULT ===== -->
+    <div id="result-display" class="min-h-[2.5rem] text-center">
+      <p id="result-msg" class="text-sm font-medium text-zinc-500">Selecciona rojo o negro y gira</p>
+    </div>
+
+    <!-- ===== STATS ===== -->
+    <div class="flex items-center gap-4 text-xs text-zinc-500">
+      <span id="last-result" class="text-zinc-600">--</span>
+    </div>
+
+    <!-- ===== RECENT HISTORY ===== -->
+    <div id="history" class="flex items-center gap-1 flex-wrap justify-center max-w-xs"></div>
+
+  </section>
+</Layout>
+
+<style is:global>
+  /* ===== WHEEL ===== */
+  .wheel {
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    position: relative;
+    border: 8px solid #2a2a3a;
+    box-shadow:
+      0 0 0 4px #1a1a2a,
+      0 0 0 8px #333350,
+      0 0 40px rgba(34,197,94,0.1),
+      inset 0 0 30px rgba(0,0,0,0.4);
+    background: #111;
+    will-change: transform;
+  }
+
+  @media (max-width: 400px) {
+    .wheel { width: 280px; height: 280px; }
+  }
+
+  /* ===== SECTOR NUMBERS ===== */
+  .roulette-num {
+    position: absolute;
+    font-size: 11px;
+    font-weight: 700;
+    pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    transform: translate(-50%, -50%);
+  }
+  @media (max-width: 400px) {
+    .roulette-num { font-size: 10px; }
+  }
+
+  /* ===== POINTER (fixed, top center) ===== */
+  .pointer {
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 22px solid #facc15;
+    filter: drop-shadow(0 2px 4px rgba(250,204,21,0.5));
+    z-index: 20;
+  }
+
+  /* ===== CENTER HUB ===== */
+  .wheel-hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle at 40% 40%, #3a3a4a, #111);
+    border: 3px solid #444;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    z-index: 15;
+    pointer-events: none;
+  }
+  .wheel-hub::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, #555, #222);
+  }
+
+  /* ===== BET BUTTONS ===== */
+  .bet-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    cursor: pointer;
+    color: #fff;
+  }
+  .bet-red {
+    background: rgba(239,68,68,0.15);
+  }
+  .bet-red.active {
+    border-color: #EF4444;
+    background: rgba(239,68,68,0.25);
+    box-shadow: 0 0 15px rgba(239,68,68,0.2);
+  }
+  .bet-black {
+    background: rgba(255,255,255,0.05);
+  }
+  .bet-black.active {
+    border-color: #9CA3AF;
+    background: rgba(255,255,255,0.1);
+    box-shadow: 0 0 15px rgba(255,255,255,0.08);
+  }
+
+  /* ===== SPIN BUTTON ===== */
+  .glass-spin {
+    background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,185,129,0.08));
+    border: 1px solid rgba(34,197,94,0.2);
+    box-shadow:
+      0 2px 10px rgba(34,197,94,0.1),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-spin::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,0.08) 50%, transparent 65%);
+    background-size: 200% 100%;
+    background-position: 100% 0;
+    transition: background-position 0.4s;
+  }
+  .glass-spin:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(34,197,94,0.25), rgba(16,185,129,0.15));
+    border-color: rgba(34,197,94,0.4);
+    box-shadow: 0 4px 20px rgba(34,197,94,0.2);
+    transform: translateY(-1px);
+  }
+  .glass-spin:hover:not(:disabled)::before { background-position: 0 0; }
+
+  /* ===== HISTORY DOTS ===== */
+  .hist-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+</style>
+
+<script>
+  import { gsap } from 'gsap';
+
+  // ===== ROULETTE DATA =====
+  const WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+  const REDS = new Set([32, 19, 21, 25, 34, 27, 36, 30, 23, 5, 16, 1, 14, 9, 18, 7, 12, 3]);
+  const SLICE = 360 / 37;
+
+  function getColor(n) {
+    if (n === 0) return { name: 'verde', bg: '#22C55E', text: '#000' };
+    if (REDS.has(n)) return { name: 'rojo', bg: '#DC2626', text: '#fff' };
+    return { name: 'negro', bg: '#1F2937', text: '#fff' };
+  }
+
+  // ===== DOM =====
+  const wheelEl = document.getElementById('wheel');
+  const spinBtn = document.getElementById('spin-btn');
+  const resultMsg = document.getElementById('result-msg');
+  const historyEl = document.getElementById('history');
+  const betRed = document.getElementById('bet-red');
+  const betBlack = document.getElementById('bet-black');
+
+  let playerBet = 'rojo';
+  let isSpinning = false;
+  let history = [];
+
+  // ===== BUILD WHEEL =====
+  function buildWheel() {
+    const size = wheelEl.offsetWidth || 320;
+    const radius = size / 2 - 20;
+
+    // Conic gradient
+    const parts = WHEEL_ORDER.map((num, i) => {
+      const col = getColor(num);
+      return `${col.bg} ${(i * SLICE).toFixed(2)}deg ${((i + 1) * SLICE).toFixed(2)}deg`;
+    });
+    wheelEl.style.background = `conic-gradient(${parts.join(', ')})`;
+
+    // Numbers
+    const nums = WHEEL_ORDER.map((num, i) => {
+      const angleDeg = (i + 0.5) * SLICE - 90;
+      const angleRad = angleDeg * Math.PI / 180;
+      const x = Math.cos(angleRad) * radius;
+      const y = Math.sin(angleRad) * radius;
+      const c = getColor(num);
+      return `<span class="roulette-num" style="left: calc(50% + ${x}px); top: calc(50% + ${y}px); color: ${c.text}; font-size: ${size < 300 ? '9px' : '11px'};">${num}</span>`;
+    }).join('');
+
+    wheelEl.insertAdjacentHTML('beforeend', nums);
+  }
+
+  buildWheel();
+
+  // ===== SOUNDS =====
+  const Sound = {
+    ctx: null,
+    _init() {
+      if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      return this.ctx;
+    },
+    tick() {
+      try {
+        const c = this._init();
+        const o = c.createOscillator(); const g = c.createGain();
+        o.connect(g); g.connect(c.destination);
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(2200 + Math.random() * 400, c.currentTime);
+        g.gain.setValueAtTime(0.02, c.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.02);
+        o.start(c.currentTime); o.stop(c.currentTime + 0.02);
+      } catch {}
+    },
+    win() {
+      try {
+        const c = this._init();
+        [523, 659, 784, 1047].forEach((f, i) => {
+          const o = c.createOscillator(); const g = c.createGain();
+          o.connect(g); g.connect(c.destination);
+          o.type = 'sine';
+          const t = c.currentTime + i * 0.12;
+          o.frequency.setValueAtTime(f, t);
+          g.gain.setValueAtTime(0.06, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+          o.start(t); o.stop(t + 0.25);
+        });
+      } catch {}
+    },
+    lose() {
+      try {
+        const c = this._init();
+        [350, 280, 220].forEach((f, i) => {
+          const o = c.createOscillator(); const g = c.createGain();
+          o.connect(g); g.connect(c.destination);
+          o.type = 'sawtooth';
+          const t = c.currentTime + i * 0.15;
+          o.frequency.setValueAtTime(f, t);
+          g.gain.setValueAtTime(0.03, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+          o.start(t); o.stop(t + 0.25);
+        });
+      } catch {}
+    },
+  };
+
+  // ===== BET SELECTION =====
+  betRed.addEventListener('click', () => {
+    playerBet = 'rojo';
+    betRed.classList.add('active');
+    betBlack.classList.remove('active');
+  });
+  betBlack.addEventListener('click', () => {
+    playerBet = 'negro';
+    betBlack.classList.add('active');
+    betRed.classList.remove('active');
+  });
+
+  // ===== SPIN =====
+  async function spin() {
+    if (isSpinning) return;
+    isSpinning = true;
+    spinBtn.disabled = true;
+    resultMsg.className = 'text-sm font-medium text-zinc-500';
+    resultMsg.textContent = 'Girando...';
+    Sound._init();
+
+    const resultNum = WHEEL_ORDER[Math.floor(Math.random() * 37)];
+    const resultIndex = WHEEL_ORDER.indexOf(resultNum);
+    const resultColor = getColor(resultNum);
+
+    // Remove old number elements for rebuild
+    wheelEl.querySelectorAll('.roulette-num').forEach((n) => n.remove());
+    buildWheel();
+
+    // Calculate rotation: clockwise, bring resultIndex to the pointer (top)
+    const sectorOffset = ((37 - resultIndex) % 37) * SLICE;
+    const fullSpins = 360 * (6 + Math.floor(Math.random() * 3));
+    const totalDeg = fullSpins + sectorOffset;
+
+    // Tick sounds during spin
+    let tickInt = setInterval(() => Sound.tick(), 60);
+
+    await new Promise((resolve) => {
+      gsap.to(wheelEl, {
+        rotation: `+=${totalDeg}`,
+        duration: 5 + Math.random() * 2,
+        ease: 'power4.out',
+        onUpdate() {
+          // Slow down ticks as wheel decelerates
+          const p = this.progress();
+          if (p > 0.6 && Math.random() < 0.3) {
+            clearInterval(tickInt);
+            tickInt = setInterval(() => Sound.tick(), 100 + p * 300);
+          }
+        },
+        onComplete: resolve,
+      });
+    });
+
+    clearInterval(tickInt);
+
+    // Animate pointer bounce
+    const pointer = document.querySelector('.pointer');
+    gsap.fromTo(pointer, { y: -4 }, { y: 2, duration: 0.08, yoyo: true, repeat: 5, ease: 'power2.out' });
+
+    // Result
+    const betMatch = (playerBet === 'rojo' && REDS.has(resultNum)) || (playerBet === 'negro' && resultNum !== 0 && !REDS.has(resultNum));
+    const isZero = resultNum === 0;
+
+    if (isZero) {
+      resultMsg.className = 'text-lg font-bold text-dt-green text-center';
+      resultMsg.textContent = `🟢 ¡${resultNum} VERDE! ¡Todos beben 2 chupitos!`;
+      Sound.win();
+    } else if (betMatch) {
+      resultMsg.className = 'text-lg font-bold text-red-400 text-center';
+      resultMsg.textContent = `${resultNum} ${resultColor.name.toUpperCase()} — ¡BEBES! 🍸`;
+      Sound.lose();
+    } else {
+      resultMsg.className = 'text-sm font-medium text-zinc-500';
+      resultMsg.textContent = `${resultNum} ${resultColor.name} — ¡Te salvas! 😮‍💨`;
+    }
+
+    // History
+    const dot = document.createElement('span');
+    dot.className = 'hist-dot';
+    dot.style.background = resultColor.bg;
+    dot.textContent = resultNum;
+    dot.title = resultNum + ' ' + resultColor.name;
+    historyEl.prepend(dot);
+    if (historyEl.children.length > 12) historyEl.lastChild.remove();
+
+    isSpinning = false;
+    spinBtn.disabled = false;
+  }
+
+  spinBtn.addEventListener('click', spin);
+</script>

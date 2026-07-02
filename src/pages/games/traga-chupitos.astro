@@ -137,15 +137,25 @@ import Layout from '../../layouts/Layout.astro';
           </div>
 
           <!-- ===== STATS ===== -->
-          <div class="flex items-center justify-center gap-6 text-[11px] text-zinc-500">
-            <span class="flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-dt-green/40" />
-              💧 Bebidas: <span id="drink-count" class="text-dt-green-light font-semibold">0</span>
-            </span>
-            <span class="flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-dt-green-light/40" />
-              🎰 Tiradas: <span id="spin-count" class="text-dt-green-light font-semibold">0</span>
-            </span>
+          <div class="flex flex-col items-center gap-2">
+            <div class="flex items-center justify-center gap-6 text-[11px] text-zinc-500">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-dt-green/40" />
+                💧 Bebidas: <span id="drink-count" class="text-dt-green-light font-semibold">0</span>
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-dt-green-light/40" />
+                🎰 Tiradas: <span id="spin-count" class="text-dt-green-light font-semibold">0</span>
+              </span>
+            </div>
+            <!-- Buildup meter -->
+            <div id="buildup-row" class="flex items-center gap-2 text-[10px] text-zinc-500 hidden">
+              <span>🔥 Calentón:</span>
+              <div class="w-24 h-2 rounded-full bg-zinc-800 border border-white/5 overflow-hidden">
+                <div id="buildup-bar" class="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+              <span id="buildup-label" class="text-orange-400 font-semibold">x0</span>
+            </div>
           </div>
         </div>
       </div>
@@ -370,6 +380,9 @@ import Layout from '../../layouts/Layout.astro';
   const drinkCount = document.getElementById('drink-count');
   const spinCount = document.getElementById('spin-count');
   const machine = document.getElementById('machine');
+  const buildupBar = document.getElementById('buildup-bar');
+  const buildupLabel = document.getElementById('buildup-label');
+  const buildupRow = document.getElementById('buildup-row');
 
   // ===== STATE =====
   let isSpinning = false;
@@ -377,6 +390,7 @@ import Layout from '../../layouts/Layout.astro';
   let spins = 0;
   let symbolHeight = 56;
   let spinTweens = [];
+  let buildup = 0;
 
   // ===== SOUND ENGINE =====
   const Sound = {
@@ -556,6 +570,28 @@ import Layout from '../../layouts/Layout.astro';
   function getRandomSymbol() { return SYMBOLS[rand(SYMBOLS.length)]; }
   function randomSymbols(n) { return Array.from({ length: n }, getRandomSymbol); }
 
+  function getWeightedSymbol() {
+    const w = 1 + buildup * 0.6;
+    const total = 5 + w;
+    const roll = Math.random() * total;
+    if (roll < w) return WIN_SYMBOL;
+    const others = ['🍒', '🍋', '🍊', '🍇', '🍉'];
+    return others[Math.floor((roll - w) / (total - w) * 5)];
+  }
+
+  function updateBuildupUI() {
+    if (buildup > 0) {
+      buildupRow.classList.remove('hidden');
+      const pct = Math.min(100, buildup * 10);
+      buildupBar.style.width = `${pct}%`;
+      buildupLabel.textContent = `x${buildup}`;
+    } else {
+      buildupRow.classList.add('hidden');
+      buildupBar.style.width = '0%';
+      buildupLabel.textContent = 'x0';
+    }
+  }
+
   // ===== BUILD REEL STRIP =====
   function buildStrip(el, resultSymbol) {
     const symbols = randomSymbols(STRIP_LEN);
@@ -696,7 +732,7 @@ import Layout from '../../layouts/Layout.astro';
     spins++;
     spinCount.textContent = spins;
 
-    const results = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
+    const results = [getWeightedSymbol(), getWeightedSymbol(), getWeightedSymbol()];
 
     // ---- LEVER PULL ----
     Sound.leverClick();
@@ -712,12 +748,13 @@ import Layout from '../../layouts/Layout.astro';
 
     // ---- START ALL 3 REELS ----
     const reelFrame3 = document.getElementById('reel-frame-3');
+    const speed = Math.max(0.35, 1 - buildup * 0.065);
+    const baseDurations = [1.8, 2.5, 4.2];
 
-    // Animate all 3 reels simultaneously (different durations)
     const [p1, p2, p3] = strips.map((el, i) => {
-      const durations = [1.8, 2.5, 4.2]; // reel 3 takes longer
-      const extra = i === 2 ? 12 : 6;    // reel 3 starts from deeper
-      return animateReelDown(el, results[i], durations[i], 'power4.out', extra);
+      const dur = baseDurations[i] * speed;
+      const extra = i === 2 ? 12 : 6;
+      return animateReelDown(el, results[i], dur, 'power4.out', extra);
     });
 
     // Buzz sound interval
@@ -791,6 +828,8 @@ import Layout from '../../layouts/Layout.astro';
     const isWin = results.every((s) => s === WIN_SYMBOL);
 
     if (isWin) {
+      buildup = 0;
+      updateBuildupUI();
       drinks++;
       drinkCount.textContent = drinks;
       resultMsg.className = 'text-lg font-bold text-dt-green-light win text-center';
@@ -804,9 +843,13 @@ import Layout from '../../layouts/Layout.astro';
       Sound.fail();
     } else {
       const sc = results.filter((s) => s === WIN_SYMBOL).length;
+      if (sc === 0) {
+        buildup++;
+        updateBuildupUI();
+      }
       const msgs = ['😅 Nada... ¡Otra!', '🙃 Otra vez', '🤷 Ni uno', '😬 La próxima'];
       resultMsg.className = 'text-sm font-medium text-zinc-500';
-      resultMsg.textContent = sc === 2 ? '🥃🥃 ¡Casi!' : sc === 1 ? '🥃 Solitario' : msgs[rand(msgs.length)];
+      resultMsg.textContent = sc === 0 ? `${msgs[rand(msgs.length)]} 🔥x${buildup}` : sc === 2 ? '🥃🥃 ¡Casi!' : '🥃 Solitario';
       Sound.lose();
     }
 
@@ -820,6 +863,8 @@ import Layout from '../../layouts/Layout.astro';
     if (isSpinning) return;
     drinks = 0;
     spins = 0;
+    buildup = 0;
+    updateBuildupUI();
     drinkCount.textContent = '0';
     spinCount.textContent = '0';
     resultMsg.className = 'text-sm font-medium text-zinc-500';

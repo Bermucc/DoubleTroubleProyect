@@ -297,6 +297,17 @@ import Layout from '../../layouts/Layout.astro';
     z-index: 100;
   }
 
+  /* ===== SPARKS ===== */
+  .spark {
+    position: fixed;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 200;
+    box-shadow: 0 0 6px 2px currentColor;
+  }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 480px) {
     .reel-window {
@@ -513,13 +524,7 @@ import Layout from '../../layouts/Layout.astro';
         y: targetY,
         duration,
         ease: 'power4.out',
-        onUpdate() {
-          const p = this.progress();
-          const blur = 5 * (1 - p * p * p);
-          el.style.filter = `blur(${blur}px)`;
-        },
         onComplete() {
-          el.style.filter = 'blur(0px)';
           resolve();
         },
       });
@@ -554,6 +559,44 @@ import Layout from '../../layouts/Layout.astro';
         delay: Math.random() * 0.5,
         ease: 'power2.out',
         onComplete() { piece.remove(); },
+      });
+    }
+  }
+
+  // ===== SPARKS =====
+  function fireSparks(count = 30) {
+    const rect = lever.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const colors = ['#FDE047', '#F59E0B', '#F97316', '#FEF3C7', '#FFFBEB'];
+
+    for (let i = 0; i < count; i++) {
+      const spark = document.createElement('div');
+      spark.className = 'spark';
+      const color = colors[rand(colors.length)];
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 30 + Math.random() * 120;
+      const size = 3 + Math.random() * 5;
+      spark.style.cssText = `
+        left: ${cx}px;
+        top: ${cy}px;
+        width: ${size}px;
+        height: ${size}px;
+        color: ${color};
+        background: ${color};
+        opacity: 1;
+      `;
+      document.body.appendChild(spark);
+
+      gsap.to(spark, {
+        x: Math.cos(angle) * dist,
+        y: Math.sin(angle) * dist,
+        opacity: 0,
+        scale: 0.3,
+        duration: 0.4 + Math.random() * 0.5,
+        delay: Math.random() * 0.08,
+        ease: 'power2.out',
+        onComplete() { spark.remove(); },
       });
     }
   }
@@ -596,6 +639,7 @@ import Layout from '../../layouts/Layout.astro';
 
     // ---- LEVER PULL ----
     Sound.leverClick();
+    fireSparks(35);
     gsap.to(leverBall, { y: 38, duration: 0.1, ease: 'power2.in' });
     gsap.to(leverStick, { scaleY: 0.15, transformOrigin: 'bottom center', duration: 0.1, ease: 'power2.in' });
 

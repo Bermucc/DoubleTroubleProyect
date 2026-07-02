@@ -347,6 +347,7 @@ import Layout from '../../layouts/Layout.astro';
   let drinks = 0;
   let spins = 0;
   let symbolHeight = 56;
+  let ticks = null;
 
   // ===== SOUND ENGINE =====
   const Sound = {
@@ -517,17 +518,21 @@ import Layout from '../../layouts/Layout.astro';
     return { targetY, symbols };
   }
 
-  // ===== SPIN A SINGLE REEL =====
-  function spinStrip(el, targetY, duration) {
-    return new Promise((resolve) => {
-      gsap.to(el, {
-        y: targetY,
-        duration,
-        ease: 'power4.out',
-        onComplete() {
-          resolve();
-        },
-      });
+  // ===== CONTINUOUS REEL SPIN =====
+  function startContinuousSpin() {
+    strips.forEach((el) => {
+      function cycle() {
+        const result = getRandomSymbol();
+        el._currentSymbol = result;
+        const { targetY } = buildStrip(el, result);
+        gsap.to(el, {
+          y: targetY,
+          duration: 0.7 + Math.random() * 0.4,
+          ease: 'power1.inOut',
+          onComplete: cycle,
+        });
+      }
+      cycle();
     });
   }
 
@@ -601,104 +606,39 @@ import Layout from '../../layouts/Layout.astro';
     }
   }
 
-  // ===== MAIN SPIN =====
+  // ===== MAIN SPIN (lever pull) =====
   async function spin() {
     if (isSpinning) return;
     isSpinning = true;
     spinBtn.disabled = true;
-    machine.classList.remove('win', 'shake');
+    machine.classList.remove('win');
     resultMsg.className = 'text-sm font-medium text-zinc-500';
 
-    // Init audio on interaction
     Sound._init();
+
+    Sound.reelStart();
+    ticks = setInterval(() => Sound.tick(), 80);
 
     spins++;
     spinCount.textContent = spins;
 
-    // Results
     const results = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
     const isWin = results.every((s) => s === WIN_SYMBOL);
-
-    // Build fresh strips (hidden during lever pull)
-    const data = strips.map((el, i) => buildStrip(el, results[i]));
-
-    // Determine sizes
-    const el = strips[0];
-    const h = el.querySelector('.sym')?.offsetHeight || 56;
-    symbolHeight = h;
-
-    // Rebuild with correct height
-    strips.forEach((el, i) => {
-      const d = buildStrip(el, results[i]);
-      data[i] = d;
-    });
-
-    window.requestAnimationFrame(() => {
-      document.documentElement.style.setProperty('--sym-h', symbolHeight + 'px');
-    });
 
     // ---- LEVER PULL ----
     Sound.leverClick();
     fireSparks(35);
     gsap.to(leverBall, { y: 38, duration: 0.1, ease: 'power2.in' });
     gsap.to(leverStick, { scaleY: 0.15, transformOrigin: 'bottom center', duration: 0.1, ease: 'power2.in' });
-
     machine.classList.add('shake');
 
-    // Lever spring back
     await new Promise((r) => setTimeout(r, 100));
     Sound.leverSpring();
     gsap.to(leverBall, { y: 0, duration: 0.35, ease: 'bounce.out' });
     gsap.to(leverStick, { scaleY: 1, duration: 0.35, ease: 'bounce.out' });
-
     machine.classList.remove('shake');
 
-    // Small pause for tension
-    await new Promise((r) => setTimeout(r, 200));
-
-    // ---- REELS SPIN ----
-    resultMsg.textContent = '🎰 Girando...';
-    Sound.reelStart();
-
-    const reelDuration = 1800;
-
-    // Start all reels, wait for all
-    const reelPromises = strips.map((el, i) => {
-      const delay = i * 350;
-      const dur = reelDuration + i * 200;
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          spinStrip(el, data[i].targetY, dur / 1000).then(resolve);
-        }, delay);
-      });
-    });
-
-    // Tick sounds during spin
-    let tickInterval;
-    const startTick = () => {
-      let tickCount = 0;
-      tickInterval = setInterval(() => {
-        Sound.tick();
-        tickCount++;
-        if (tickCount > 90) clearInterval(tickInterval);
-      }, 50);
-    };
-    startTick();
-
-    // Slow down ticks
-    for (let t = 1; t <= 3; t++) {
-      await new Promise((r) => setTimeout(r, 500 + t * 400));
-      clearInterval(tickInterval);
-      Sound.stopClunk();
-      if (t < 3) {
-        tickInterval = setInterval(() => {
-          Sound.tick();
-        }, 80 + t * 30);
-      }
-    }
-
-    await Promise.all(reelPromises);
-    clearInterval(tickInterval);
+    await new Promise((r) => setTimeout(r, 150));
 
     // ---- RESULT ----
     if (isWin) {
@@ -713,16 +653,16 @@ import Layout from '../../layouts/Layout.astro';
       const shotCount = results.filter((s) => s === WIN_SYMBOL).length;
       if (shotCount === 2) {
         resultMsg.textContent = '🥃🥃 ¡Casi! ¡Por uno!';
-        Sound.lose();
       } else if (shotCount === 1) {
         resultMsg.textContent = '🥃 Un vaso... casi nada';
-        Sound.lose();
       } else {
         const noneMsgs = ['😅 Nada... ¡Otra vez!', '🙃 Inténtalo de nuevo', '🤷‍♂️ Ni uno', '😬 La próxima será'];
         resultMsg.textContent = noneMsgs[rand(noneMsgs.length)];
-        Sound.lose();
       }
+      Sound.lose();
     }
+
+    if (ticks) { clearInterval(ticks); ticks = null; }
 
     isSpinning = false;
     spinBtn.disabled = false;
@@ -751,15 +691,15 @@ import Layout from '../../layouts/Layout.astro';
 
   // ===== INIT =====
   (function init() {
-    const initialSymbols = ['🍒', '🍋', '🍊'];
-    strips.forEach((el, i) => {
-      const s = initialSymbols[i] || getRandomSymbol();
-      buildStrip(el, s);
-    });
     window.requestAnimationFrame(() => {
-      const h = strips[0].querySelector('.sym')?.offsetHeight || 56;
-      symbolHeight = h;
-      document.documentElement.style.setProperty('--sym-h', h + 'px');
+      const first = strips[0];
+      buildStrip(first, '🍒');
+      window.requestAnimationFrame(() => {
+        const h = first.querySelector('.sym')?.offsetHeight || 56;
+        symbolHeight = h;
+        document.documentElement.style.setProperty('--sym-h', h + 'px');
+        startContinuousSpin();
+      });
     });
   })();
 </script>

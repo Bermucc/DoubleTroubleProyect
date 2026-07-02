@@ -1,0 +1,218 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Tragachupitos - Double Trouble Company" description="Máquina tragaperras de fiesta">
+
+  <section class="min-h-screen pt-24 pb-16 px-4 flex items-center justify-center">
+    <div class="w-full max-w-lg mx-auto">
+
+      <!-- Slot Machine -->
+      <div id="machine" class="relative rounded-3xl border-2 border-dt-green/30 bg-gradient-to-b from-dt-darker to-black p-6 sm:p-8 shadow-[0_0_60px_-12px_rgba(34,197,94,0.15)]">
+
+        <!-- Top decoration -->
+        <div class="text-center mb-6">
+          <h1 class="text-2xl sm:text-3xl font-black text-dt-green tracking-wider uppercase">
+            Tragachupitos
+          </h1>
+          <div class="flex items-center justify-center gap-1 mt-1">
+            <span class="w-2 h-2 rounded-full bg-dt-green" />
+            <span class="w-2 h-2 rounded-full bg-dt-green-light" />
+            <span class="w-2 h-2 rounded-full bg-dt-emerald" />
+          </div>
+        </div>
+
+        <div class="flex gap-2 sm:gap-3 items-center">
+          <!-- Reels -->
+          <div class="flex-1 grid grid-cols-3 gap-2 sm:gap-3">
+            <div class="reel-window relative rounded-xl border border-white/10 bg-black/60 overflow-hidden aspect-[3/4] flex items-center justify-center">
+              <span id="reel-1" class="reel-symbol text-5xl sm:text-6xl">🍒</span>
+              <div class="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none" />
+              <div class="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+            </div>
+            <div class="reel-window relative rounded-xl border border-white/10 bg-black/60 overflow-hidden aspect-[3/4] flex items-center justify-center">
+              <span id="reel-2" class="reel-symbol text-5xl sm:text-6xl">🍋</span>
+              <div class="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none" />
+              <div class="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+            </div>
+            <div class="reel-window relative rounded-xl border border-white/10 bg-black/60 overflow-hidden aspect-[3/4] flex items-center justify-center">
+              <span id="reel-3" class="reel-symbol text-5xl sm:text-6xl">🍊</span>
+              <div class="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none" />
+              <div class="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+            </div>
+          </div>
+
+          <!-- Lever -->
+          <div class="relative w-10 sm:w-12 h-48 sm:h-56 flex flex-col items-center justify-end">
+            <div class="lever-track absolute top-0 bottom-6 w-2 rounded-full bg-white/5 border border-white/5" />
+            <div class="relative z-10 flex flex-col items-center cursor-pointer" id="lever" role="button" tabindex="0" aria-label="Tirar palanca">
+              <div id="lever-ball" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-dt-green to-dt-emerald shadow-lg shadow-dt-green/30 border border-dt-green-light/30 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14m0 0l-4-4m4 4l4-4" />
+                </svg>
+              </div>
+              <div id="lever-stick" class="w-1.5 h-24 sm:h-28 rounded-full bg-gradient-to-b from-dt-green/80 to-dt-emerald/40" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom info -->
+        <div class="mt-6 text-center space-y-3">
+          <div id="result-message" class="text-sm font-medium text-dt-light/40 min-h-[1.5rem]">
+            ¡Tira de la palanca!
+          </div>
+
+          <button id="spin-btn" class="px-8 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-dt-green to-dt-emerald hover:from-dt-emerald hover:to-dt-green transition-all duration-300 shadow-lg shadow-dt-green/25 hover:shadow-dt-emerald/25 disabled:opacity-40 disabled:cursor-not-allowed">
+            ¡Tirar!
+          </button>
+
+          <div class="flex items-center justify-center gap-4 text-xs text-dt-light/30">
+            <span>💧 Bebidas: <span id="drink-count">0</span></span>
+            <span>🎰 Tiradas: <span id="spin-count">0</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Symbols legend -->
+      <div class="mt-4 text-center text-xs text-dt-light/20">
+        <span>🍒 🍋 🍊 🍇 🍉 🥃</span>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style is:global>
+  .reel-symbol {
+    transition: filter 0.1s;
+    user-select: none;
+  }
+
+  .reel-symbol.spinning {
+    filter: blur(3px);
+  }
+
+  #machine.win {
+    animation: winPulse 1s ease-in-out 3;
+  }
+
+  @keyframes winPulse {
+    0%, 100% { box-shadow: 0 0 60px -12px rgba(34,197,94,0.15); }
+    50% { box-shadow: 0 0 80px 0px rgba(34,197,94,0.5); }
+  }
+
+  #result-message.win {
+    animation: textGlow 1s ease-in-out infinite;
+  }
+
+  @keyframes textGlow {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+</style>
+
+<script>
+  import { gsap } from 'gsap';
+
+  const SYMBOLS = ['🍒', '🍋', '🍊', '🍇', '🍉', '🥃'];
+  const REELS = ['reel-1', 'reel-2', 'reel-3'];
+
+  const leverBall = document.getElementById('lever-ball');
+  const leverStick = document.getElementById('lever-stick');
+  const lever = document.getElementById('lever');
+  const spinBtn = document.getElementById('spin-btn');
+  const resultMsg = document.getElementById('result-message');
+  const drinkCount = document.getElementById('drink-count');
+  const spinCount = document.getElementById('spin-count');
+  const machine = document.getElementById('machine');
+
+  let isSpinning = false;
+  let drinks = 0;
+  let spins = 0;
+
+  function getRandomSymbol() {
+    return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+  }
+
+  function spinReel(reelId, resultSymbol, duration) {
+    return new Promise((resolve) => {
+      const reel = document.getElementById(reelId);
+      reel.classList.add('spinning');
+
+      const startTime = performance.now();
+
+      function cycle() {
+        const elapsed = performance.now() - startTime;
+        const progress = elapsed / duration;
+
+        if (progress >= 1) {
+          reel.textContent = resultSymbol;
+          reel.classList.remove('spinning');
+          resolve();
+          return;
+        }
+
+        reel.textContent = getRandomSymbol();
+
+        const delay = 40 + progress * progress * 260;
+        setTimeout(cycle, delay);
+      }
+
+      cycle();
+    });
+  }
+
+  async function spin() {
+    if (isSpinning) return;
+    isSpinning = true;
+    spinBtn.disabled = true;
+    resultMsg.className = 'text-sm font-medium text-dt-light/40 min-h-[1.5rem]';
+    resultMsg.textContent = 'Girando...';
+    machine.classList.remove('win');
+
+    spins++;
+    spinCount.textContent = spins;
+
+    const results = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
+
+    const tl = gsap.timeline();
+
+    tl.to(leverBall, { y: 35, duration: 0.12, ease: 'power2.in' })
+      .to(leverBall, { y: 0, duration: 0.35, ease: 'bounce.out' });
+
+    tl.to(leverStick, { scaleY: 0.2, transformOrigin: 'bottom center', duration: 0.12, ease: 'power2.in' }, 0)
+      .to(leverStick, { scaleY: 1, duration: 0.35, ease: 'bounce.out' }, 0.12);
+
+    const reels = REELS.map((id, i) => spinReel(id, results[i], 1200 + i * 400));
+    await Promise.all(reels);
+
+    const isWin = results.every((s) => s === '🥃');
+
+    if (isWin) {
+      drinks++;
+      drinkCount.textContent = drinks;
+      resultMsg.className = 'text-lg font-bold text-dt-green-light min-h-[1.5rem] win';
+      resultMsg.textContent = '🥃 ¡BEBE UN CHUPITO! 🥃';
+      machine.classList.add('win');
+    } else {
+      const shotCount = results.filter((s) => s === '🥃').length;
+      if (shotCount > 0) {
+        resultMsg.textContent = `${'🥃'.repeat(shotCount)} ${shotCount === 2 ? '¡Casi!' : 'Casi...'}`;
+      } else {
+        resultMsg.textContent = 'Nada... ¡Otra vez!';
+      }
+    }
+
+    isSpinning = false;
+    spinBtn.disabled = false;
+  }
+
+  lever.addEventListener('click', spin);
+  spinBtn.addEventListener('click', spin);
+
+  lever.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      spin();
+    }
+  });
+</script>

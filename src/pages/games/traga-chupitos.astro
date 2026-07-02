@@ -291,11 +291,14 @@ import Layout from '../../layouts/Layout.astro';
 
   /* ===== REEL FRAME LIGHTING ===== */
   .reel-frame {
-    transition: border-color 0.3s;
+    transition: border-color 0.3s, box-shadow 0.3s;
   }
   [id^="reel-frame-"] {
-    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
     will-change: transform;
+  }
+  .reel-frame.dramatic-glow {
+    box-shadow: 0 0 25px rgba(34,197,94,0.35), inset 0 0 20px rgba(0,0,0,0.8);
+    border-color: rgba(34,197,94,0.55) !important;
   }
   #machine.win .reel-frame {
     border-color: rgba(34,197,94,0.4) !important;
@@ -640,6 +643,7 @@ import Layout from '../../layouts/Layout.astro';
           y: targetY,
           duration: 0.7 + Math.random() * 0.4,
           ease: 'power1.inOut',
+          overwrite: true,
           onComplete: cycle,
         });
         spinTweens.push(t);
@@ -652,13 +656,14 @@ import Layout from '../../layouts/Layout.astro';
   function animateReelDown(el, result, duration, ease = 'power4.out', extraScroll = 0) {
     const { targetY } = buildStrip(el, result);
     const h = symbolHeight;
-    const startY = targetY - (10 + extraScroll) * h; // start "above" target
-    gsap.set(el, { y: startY });
+    const startY = targetY - (10 + extraScroll) * h;
+    gsap.set(el, { y: startY, overwrite: true });
     return new Promise((resolve) => {
       gsap.to(el, {
         y: targetY,
         duration,
         ease,
+        overwrite: true,
         onComplete: resolve,
       });
     });
@@ -725,15 +730,12 @@ import Layout from '../../layouts/Layout.astro';
   }
 
   // ===== TENSION OVERLAY =====
-  function showTensionOverlay() {
+  function showTensionOverlay(text = '¡A punto!') {
     const overlay = document.createElement('div');
     overlay.className = 'tension-overlay';
-    overlay.innerHTML = '<span>¡A punto!</span>';
+    overlay.innerHTML = `<span>${text}</span>`;
     document.body.appendChild(overlay);
-    gsap.fromTo(overlay,
-      { opacity: 0 },
-      { opacity: 1, duration: 0.3 }
-    );
+    gsap.fromTo(overlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
     return overlay;
   }
 
@@ -780,71 +782,62 @@ import Layout from '../../layouts/Layout.astro';
     let buzz = setInterval(() => Sound.reelBuzz(), 70);
 
     if (isDramatic) {
-      // ---- DRAMATIC FLOW ----
-      await new Promise((r) => setTimeout(r, 600));
+      const guaranteedWin = results[2] === WIN_SYMBOL;
+
+      await new Promise((r) => setTimeout(r, 500));
       clearInterval(buzz);
       Sound.tension();
 
-      // Kill all reel animations, capture current positions
+      // Snapshot current strip positions smoothly
       const snapshots = strips.map((el, i) => {
         gsap.killTweensOf(el);
-        const currentY = parseFloat(gsap.getProperty(el, 'y')) || 0;
+        const currentY = gsap.getProperty(el, 'y');
         const { targetY } = buildStrip(el, results[i]);
-        gsap.set(el, { y: currentY });
+        gsap.set(el, { y: currentY, overwrite: true });
         return { el, currentY, targetY };
       });
 
-      // Zoom ALL 3 reel frames
-      const overlay = showTensionOverlay();
-      gsap.to(reelFrames, {
-        scale: 1.18,
-        duration: 0.6,
-        ease: 'power2.inOut',
-        boxShadow: '0 0 25px rgba(34,197,94,0.3), inset 0 0 20px rgba(0,0,0,0.8)',
-        borderColor: 'rgba(34,197,94,0.5)',
-      });
+      // Zoom all 3 reel frames via CSS class + GSAP scale
+      reelFrames.forEach((f) => f.classList.add('dramatic-glow'));
+      gsap.to(reelFrames, { scale: 1.18, duration: 0.6, ease: 'power2.inOut', overwrite: true });
 
-      resultMsg.textContent = '🥃 ¿🥃? ¿😰?';
+      const overlayText = guaranteedWin ? '¡JACKPOT!' : '¡A punto!';
+      const overlay = showTensionOverlay(overlayText);
+      resultMsg.textContent = guaranteedWin ? '🥃 ¿? ¿?' : '🥃 ¿🥃? ¿😰?';
       resultMsg.className = 'text-lg font-bold text-dt-green-light text-center';
 
       // ---- REEL 1: slow reveal ----
-      await new Promise((r) => setTimeout(r, 600));
-      const s1 = snapshots[0];
+      await new Promise((r) => setTimeout(r, 500));
       await new Promise((r) => {
-        gsap.to(s1.el, { y: s1.targetY, duration: 1.5, ease: 'expo.out', onComplete: r });
+        gsap.to(snapshots[0].el, { y: snapshots[0].targetY, duration: 1.5, ease: 'expo.out', overwrite: true, onComplete: r });
       });
       Sound.stopClunk();
       resultMsg.textContent = `${results[0]} · ? · ?`;
 
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 350));
 
       // ---- REEL 2: slow reveal ----
-      const s2 = snapshots[1];
       await new Promise((r) => {
-        gsap.to(s2.el, { y: s2.targetY, duration: 1.5, ease: 'expo.out', onComplete: r });
+        gsap.to(snapshots[1].el, { y: snapshots[1].targetY, duration: 1.5, ease: 'expo.out', overwrite: true, onComplete: r });
       });
       Sound.stopClunk();
-      resultMsg.textContent = `${results[0]} · ${results[1]} · ¿😱?`;
+      resultMsg.textContent = `${results[0]} · ${results[1]} · ¿?`;
 
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 250));
 
-      // ---- DRUMROLL + REEL 3: ultra slow reveal ----
+      // ---- DRUMROLL + REEL 3 ----
       Sound.drumroll();
       resultMsg.textContent = '🥃 🥃 🥁...';
 
-      const s3 = snapshots[2];
       await new Promise((r) => {
-        gsap.to(s3.el, { y: s3.targetY, duration: 2.5, ease: 'expo.out', onComplete: r });
+        gsap.to(snapshots[2].el, { y: snapshots[2].targetY, duration: 2.5, ease: 'expo.out', overwrite: true, onComplete: r });
       });
       Sound.stopClunk();
 
-      // Un-zoom
-      gsap.to(reelFrames, {
-        scale: 1,
-        duration: 0.4,
-        boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8)',
-        borderColor: 'rgba(113,113,122,0.6)',
-        ease: 'power2.out',
+      // Un-zoom smoothly
+      reelFrames.forEach((f) => f.classList.remove('dramatic-glow'));
+      await new Promise((r) => {
+        gsap.to(reelFrames, { scale: 1, duration: 0.35, ease: 'power2.out', overwrite: true, onComplete: r });
       });
       overlay.remove();
     } else {

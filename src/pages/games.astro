@@ -1,0 +1,70 @@
+---
+import Layout from '../layouts/Layout.astro';
+import GameCard from '../components/GameCard.astro';
+---
+
+<Layout title="Juegos - Double Trouble Company" description="Explora todos los minijuegos disponibles para jugar con tus amigos">
+
+  <section class="min-h-screen pt-24 pb-16 px-4">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-12">
+        <h1 class="text-4xl sm:text-5xl font-black text-dt-light mb-4">
+          Minijuegos
+        </h1>
+        <p class="text-dt-light/50 max-w-md mx-auto">
+          Elige un juego, invita a tus amigos y que comience la diversión
+        </p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <GameCard
+          title="Simon Dice"
+          description="Pon a prueba tu memoria. Sigue la secuencia de colores y llega lo más lejos posible."
+          icon="🔴🟡🟢🔵"
+          status="coming-soon"
+          href="/games/simon-dice"
+        />
+        <GameCard
+          title="Preguntas y Respuestas"
+          description="Demuestra quién sabe más con preguntas de categorías variadas."
+          icon="❓"
+          status="coming-soon"
+          href="/games/trivia"
+          gradient="from-dt-pink to-dt-orange"
+        />
+        <GameCard
+          title="Rápido Mental"
+          description="Operaciones matemáticas contrarreloj. ¿Cuántas puedes resolver?"
+          icon="🧮"
+          status="coming-soon"
+          href="/games/rapido-mental"
+          gradient="from-dt-orange to-dt-purple"
+        />
+        <GameCard
+          title="Dibuja y Adivina"
+          description="Dibuja en tu turno y adivina lo que otros dibujan. Risas aseguradas."
+          icon="✏️"
+          status="coming-soon"
+          href="/games/dibuja-adivina"
+          gradient="from-green-500 to-dt-purple"
+        />
+        <GameCard
+          title="Carrera de Tipos"
+          description="Escribe palabras antes que tus rivales. Velocidad y precisión cuentan."
+          icon="⌨️"
+          status="coming-soon"
+          href="/games/carrera-tipos"
+          gradient="from-blue-500 to-dt-pink"
+        />
+        <GameCard
+          title="¿Quién soy?"
+          description="Adivina el personaje con preguntas de sí o no antes de que se acabe el tiempo."
+          icon="🕵️"
+          status="coming-soon"
+          href="/games/quien-soy"
+          gradient="from-yellow-500 to-dt-orange"
+        />
+      </div>
+    </div>
+  </section>
+</Layout>

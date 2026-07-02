@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dt-purple: #8B5CF6;
+  --color-dt-pink: #EC4899;
+  --color-dt-orange: #F97316;
+  --color-dt-dark: #0A0A0F;
+  --color-dt-darker: #06060B;
+  --color-dt-light: #F5F3FF;
+  --font-display: "Inter", "system-ui", sans-serif;
+  --font-body: "Inter", "system-ui", sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-dt-dark);
+    color: var(--color-dt-light);
+    min-height: 100vh;
+  }
+}

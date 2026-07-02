@@ -1,0 +1,108 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Double Trouble Company - Juegos de fiesta con amigos">
+  <section class="min-h-screen flex flex-col items-center justify-center px-4 pt-16 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-b from-dt-purple/5 via-transparent to-dt-dark pointer-events-none" />
+
+    <div class="relative z-10 text-center max-w-3xl mx-auto">
+      <div id="hero-badge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-dt-purple/10 border border-dt-purple/20 mb-8">
+        <span class="w-2 h-2 rounded-full bg-dt-purple animate-pulse" />
+        <span class="text-xs font-medium text-dt-purple/80 uppercase tracking-wider">La fiesta empieza aquí</span>
+      </div>
+
+      <h1 id="hero-title" class="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-tight mb-6">
+        <span class="bg-gradient-to-r from-dt-purple via-dt-pink to-dt-orange bg-clip-text text-transparent">
+          Double Trouble
+        </span>
+        <br />
+        <span class="text-dt-light">
+          Company
+        </span>
+      </h1>
+
+      <p id="hero-desc" class="text-lg sm:text-xl text-dt-light/60 max-w-xl mx-auto mb-10 leading-relaxed">
+        Minijuegos para reírte y competir con tus amigos durante las fiestas.
+        Sin registro, sin complicaciones. Solo diversión.
+      </p>
+
+      <div id="hero-cta" class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a
+          href="/games"
+          class="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-dt-purple to-dt-pink hover:from-dt-pink hover:to-dt-purple transition-all duration-300 shadow-lg shadow-dt-purple/25 hover:shadow-dt-pink/25"
+        >
+          Ver juegos
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </a>
+        <span class="text-sm text-dt-light/30">
+          Sin registro • 100% gratuito
+        </span>
+      </div>
+    </div>
+
+    <div id="hero-decoration" class="mt-16 grid grid-cols-3 gap-3 max-w-md mx-auto">
+      <div class="p-4 rounded-xl bg-dt-darker/50 border border-white/5 text-center">
+        <div class="text-2xl mb-1">🎯</div>
+        <div class="text-xs text-dt-light/40">Reflejos</div>
+      </div>
+      <div class="p-4 rounded-xl bg-dt-darker/50 border border-white/5 text-center">
+        <div class="text-2xl mb-1">🧠</div>
+        <div class="text-xs text-dt-light/40">Ingenio</div>
+      </div>
+      <div class="p-4 rounded-xl bg-dt-darker/50 border border-white/5 text-center">
+        <div class="text-2xl mb-1">🎉</div>
+        <div class="text-xs text-dt-light/40">Diversión</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-24 px-4">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="text-3xl sm:text-4xl font-bold text-dt-light mb-4">
+        ¿Cómo funciona?
+      </h2>
+      <p class="text-dt-light/50 mb-16 max-w-lg mx-auto">
+        Así de simple es empezar a jugar con tus amigos
+      </p>
+
+      <div class="grid sm:grid-cols-3 gap-8">
+        <div class="p-6 rounded-2xl bg-dt-darker/30 border border-white/5">
+          <div class="w-12 h-12 rounded-xl bg-dt-purple/10 flex items-center justify-center mx-auto mb-4">
+            <span class="text-xl font-bold text-dt-purple">1</span>
+          </div>
+          <h3 class="font-semibold text-dt-light mb-2">Elige un juego</h3>
+          <p class="text-sm text-dt-light/40">Explora nuestra colección de minijuegos y escoge el que más te guste.</p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-dt-darker/30 border border-white/5">
+          <div class="w-12 h-12 rounded-xl bg-dt-pink/10 flex items-center justify-center mx-auto mb-4">
+            <span class="text-xl font-bold text-dt-pink">2</span>
+          </div>
+          <h3 class="font-semibold text-dt-light mb-2">Comparte el código</h3>
+          <p class="text-sm text-dt-light/40">Tus amigos se unen al instante con un código único de partida.</p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-dt-darker/30 border border-white/5">
+          <div class="w-12 h-12 rounded-xl bg-dt-orange/10 flex items-center justify-center mx-auto mb-4">
+            <span class="text-xl font-bold text-dt-orange">3</span>
+          </div>
+          <h3 class="font-semibold text-dt-light mb-2">A jugar</h3>
+          <p class="text-sm text-dt-light/40">Compite, ríete y descubre quién es el mejor en cada desafío.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  import { gsap } from 'gsap';
+
+  gsap.fromTo('#hero-badge', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' });
+  gsap.fromTo('#hero-title', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+  gsap.fromTo('#hero-desc', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, delay: 0.5, ease: 'power3.out' });
+  gsap.fromTo('#hero-cta', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, delay: 0.7, ease: 'power3.out' });
+  gsap.fromTo('#hero-decoration', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, delay: 0.9, ease: 'power3.out' });
+</script>

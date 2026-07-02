@@ -34,7 +34,7 @@ import Layout from '../../layouts/Layout.astro';
             <div class="flex-1 grid grid-cols-3 gap-2 sm:gap-3">
 
               <!-- REEL 1 -->
-              <div class="reel-frame relative rounded-lg border-2 border-zinc-600/60 bg-black overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
+              <div id="reel-frame-1" class="reel-frame relative rounded-lg border-2 border-zinc-600/60 bg-black overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
                 <div class="reel-window" id="window-1">
                   <div class="reel-strip" id="strip-1"></div>
                 </div>
@@ -51,7 +51,7 @@ import Layout from '../../layouts/Layout.astro';
               </div>
 
               <!-- REEL 2 -->
-              <div class="reel-frame relative rounded-lg border-2 border-zinc-600/60 bg-black overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
+              <div id="reel-frame-2" class="reel-frame relative rounded-lg border-2 border-zinc-600/60 bg-black overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
                 <div class="reel-window" id="window-2">
                   <div class="reel-strip" id="strip-2"></div>
                 </div>
@@ -293,12 +293,12 @@ import Layout from '../../layouts/Layout.astro';
   .reel-frame {
     transition: border-color 0.3s;
   }
-  #machine.win .reel-frame {
-    border-color: rgba(34,197,94,0.4) !important;
-  }
-  #reel-frame-3 {
+  [id^="reel-frame-"] {
     transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
     will-change: transform;
+  }
+  #machine.win .reel-frame {
+    border-color: rgba(34,197,94,0.4) !important;
   }
 
   /* ===== WIN CONFETTI OVERLAY ===== */
@@ -366,6 +366,7 @@ import Layout from '../../layouts/Layout.astro';
   const STRIP_LEN = 42;
   const TARGET_INDEX = 38;
   const WIN_SYMBOL = '🥃';
+  const MAX_CALENTON = 10;
 
   // ===== DOM REFS =====
   const strips = [1, 2, 3].map((i) => document.getElementById(`strip-${i}`));
@@ -380,6 +381,7 @@ import Layout from '../../layouts/Layout.astro';
   const drinkCount = document.getElementById('drink-count');
   const spinCount = document.getElementById('spin-count');
   const machine = document.getElementById('machine');
+  const reelFrames = [1, 2, 3].map((i) => document.getElementById(`reel-frame-${i}`));
   const buildupBar = document.getElementById('buildup-bar');
   const buildupLabel = document.getElementById('buildup-label');
   const buildupRow = document.getElementById('buildup-row');
@@ -561,6 +563,24 @@ import Layout from '../../layouts/Layout.astro';
         g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5);
         o.start(c.currentTime);
         o.stop(c.currentTime + 0.5);
+      } catch {}
+    },
+    drumroll() {
+      try {
+        const c = this._init();
+        const buf = c.createBuffer(1, c.sampleRate * 1.2, c.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          const t = i / c.sampleRate;
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 3) * 0.15;
+        }
+        const source = c.createBufferSource();
+        source.buffer = buf;
+        const gain = c.createGain();
+        source.connect(gain);
+        gain.connect(c.destination);
+        gain.gain.setValueAtTime(0.12, c.currentTime);
+        source.start(c.currentTime);
       } catch {}
     },
   };
@@ -747,78 +767,101 @@ import Layout from '../../layouts/Layout.astro';
     machine.classList.remove('shake');
 
     // ---- START ALL 3 REELS ----
-    const reelFrame3 = document.getElementById('reel-frame-3');
     const speed = Math.max(0.35, 1 - buildup * 0.065);
     const baseDurations = [1.8, 2.5, 4.2];
+    const isDramatic = results[0] === WIN_SYMBOL && results[1] === WIN_SYMBOL;
 
     const [p1, p2, p3] = strips.map((el, i) => {
-      const dur = baseDurations[i] * speed;
-      const extra = i === 2 ? 12 : 6;
+      const dur = isDramatic ? 1.2 * speed : baseDurations[i] * speed;
+      const extra = isDramatic ? 4 : i === 2 ? 12 : 6;
       return animateReelDown(el, results[i], dur, 'power4.out', extra);
     });
 
-    // Buzz sound interval
     let buzz = setInterval(() => Sound.reelBuzz(), 70);
 
-    // ---- REEL 1 STOPS ----
-    await p1;
-    clearInterval(buzz);
-    Sound.stopClunk();
-    buzz = setInterval(() => Sound.reelBuzz(), 90);
-    resultMsg.textContent = `Primera: ${results[0]}`;
-
-    await new Promise((r) => setTimeout(r, 300));
-
-    // ---- REEL 2 STOPS ----
-    await p2;
-    clearInterval(buzz);
-    Sound.stopClunk();
-    buzz = setInterval(() => Sound.reelBuzz(), 110);
-    resultMsg.textContent = `${results[0]} · ${results[1]} · ?`;
-
-    const isDramatic = results[0] === WIN_SYMBOL && results[1] === WIN_SYMBOL;
-
     if (isDramatic) {
-      // ---- TENSION! ----
-      await new Promise((r) => setTimeout(r, 400));
+      // ---- DRAMATIC FLOW ----
+      await new Promise((r) => setTimeout(r, 600));
       clearInterval(buzz);
       Sound.tension();
 
-      const overlay = showTensionOverlay();
-
-      // Zoom on reel 3
-      gsap.to(reelFrame3, {
-        scale: 1.25,
-        zIndex: 60,
-        boxShadow: '0 0 30px rgba(34,197,94,0.4), inset 0 0 20px rgba(0,0,0,0.8)',
-        borderColor: 'rgba(34,197,94,0.6)',
-        duration: 0.5,
-        ease: 'power2.inOut',
+      // Kill all reel animations, capture current positions
+      const snapshots = strips.map((el, i) => {
+        gsap.killTweensOf(el);
+        const currentY = parseFloat(gsap.getProperty(el, 'y')) || 0;
+        const { targetY } = buildStrip(el, results[i]);
+        gsap.set(el, { y: currentY });
+        return { el, currentY, targetY };
       });
 
-      resultMsg.textContent = '🥃 🥃 ¿🫣?';
+      // Zoom ALL 3 reel frames
+      const overlay = showTensionOverlay();
+      gsap.to(reelFrames, {
+        scale: 1.18,
+        duration: 0.6,
+        ease: 'power2.inOut',
+        boxShadow: '0 0 25px rgba(34,197,94,0.3), inset 0 0 20px rgba(0,0,0,0.8)',
+        borderColor: 'rgba(34,197,94,0.5)',
+      });
+
+      resultMsg.textContent = '🥃 ¿🥃? ¿😰?';
       resultMsg.className = 'text-lg font-bold text-dt-green-light text-center';
 
-      // Pause tension
-      await new Promise((r) => setTimeout(r, 1200));
+      // ---- REEL 1: slow reveal ----
+      await new Promise((r) => setTimeout(r, 600));
+      const s1 = snapshots[0];
+      await new Promise((r) => {
+        gsap.to(s1.el, { y: s1.targetY, duration: 1.5, ease: 'expo.out', onComplete: r });
+      });
+      Sound.stopClunk();
+      resultMsg.textContent = `${results[0]} · ? · ?`;
 
-      // SUPER slow reveal for reel 3
-      gsap.to(reelFrame3, {
+      await new Promise((r) => setTimeout(r, 400));
+
+      // ---- REEL 2: slow reveal ----
+      const s2 = snapshots[1];
+      await new Promise((r) => {
+        gsap.to(s2.el, { y: s2.targetY, duration: 1.5, ease: 'expo.out', onComplete: r });
+      });
+      Sound.stopClunk();
+      resultMsg.textContent = `${results[0]} · ${results[1]} · ¿😱?`;
+
+      await new Promise((r) => setTimeout(r, 300));
+
+      // ---- DRUMROLL + REEL 3: ultra slow reveal ----
+      Sound.drumroll();
+      resultMsg.textContent = '🥃 🥃 🥁...';
+
+      const s3 = snapshots[2];
+      await new Promise((r) => {
+        gsap.to(s3.el, { y: s3.targetY, duration: 2.5, ease: 'expo.out', onComplete: r });
+      });
+      Sound.stopClunk();
+
+      // Un-zoom
+      gsap.to(reelFrames, {
         scale: 1,
-        zIndex: 1,
+        duration: 0.4,
         boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8)',
         borderColor: 'rgba(113,113,122,0.6)',
-        duration: 0.5,
-        ease: 'power2.inOut',
+        ease: 'power2.out',
       });
-
       overlay.remove();
-
-      // Reel 3 was still animating. Wait for it.
-      await p3;
-      Sound.stopClunk();
     } else {
-      // Normal finish for reel 3
+      // ---- NORMAL FLOW ----
+      await p1;
+      clearInterval(buzz);
+      Sound.stopClunk();
+      buzz = setInterval(() => Sound.reelBuzz(), 90);
+      resultMsg.textContent = `Primera: ${results[0]}`;
+      await new Promise((r) => setTimeout(r, 300));
+
+      await p2;
+      clearInterval(buzz);
+      Sound.stopClunk();
+      buzz = setInterval(() => Sound.reelBuzz(), 110);
+      resultMsg.textContent = `${results[0]} · ${results[1]} · ?`;
+
       await p3;
       clearInterval(buzz);
       Sound.stopClunk();
@@ -845,6 +888,20 @@ import Layout from '../../layouts/Layout.astro';
       const sc = results.filter((s) => s === WIN_SYMBOL).length;
       if (sc === 0) {
         buildup++;
+        if (buildup >= MAX_CALENTON) {
+          buildup = 0;
+          updateBuildupUI();
+          drinks += 5;
+          drinkCount.textContent = drinks;
+          resultMsg.className = 'text-lg font-bold text-red-400 text-center';
+          resultMsg.textContent = '💀 ¡CHUPITAZO! 💀 Calentón máximo. ¡Bebe 5!';
+          Sound.fail();
+          fireSparks(80);
+          isSpinning = false;
+          spinBtn.disabled = false;
+          startContinuous();
+          return;
+        }
         updateBuildupUI();
       }
       const msgs = ['😅 Nada... ¡Otra!', '🙃 Otra vez', '🤷 Ni uno', '😬 La próxima'];

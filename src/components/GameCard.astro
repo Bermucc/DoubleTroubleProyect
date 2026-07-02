@@ -8,7 +8,7 @@ export interface Props {
   gradient?: string;
 }
 
-const { title, description, href, icon = '🎮', status = 'coming-soon', gradient = 'from-dt-purple to-dt-pink' } = Astro.props;
+const { title, description, href, icon = '🎮', status = 'coming-soon', gradient = 'from-dt-green to-dt-green-light' } = Astro.props;
 ---
 
 <a
@@ -18,7 +18,7 @@ const { title, description, href, icon = '🎮', status = 'coming-soon', gradien
   <div class="flex items-start justify-between mb-4">
     <span class="text-4xl">{icon}</span>
     {status === 'coming-soon' && (
-      <span class="text-xs font-medium px-2 py-1 rounded-full bg-dt-purple/10 text-dt-purple border border-dt-purple/20">
+      <span class="text-xs font-medium px-2 py-1 rounded-full bg-dt-green/10 text-dt-green border border-dt-green/20">
         Próximamente
       </span>
     )}

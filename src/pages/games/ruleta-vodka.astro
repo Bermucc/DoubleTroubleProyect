@@ -247,6 +247,7 @@ import Layout from '../../layouts/Layout.astro';
   let playerBet = 'rojo';
   let isSpinning = false;
   let history = [];
+  let currentRotation = 0;
 
   // ===== BUILD WHEEL =====
   function buildWheel() {
@@ -361,16 +362,20 @@ import Layout from '../../layouts/Layout.astro';
     buildWheel();
 
     // Calculate rotation: bring center of resultIndex sector to the pointer (top)
-    const sectorCenter = (resultIndex + 0.5) * SLICE;
+    const targetMod = (resultIndex + 0.5) * SLICE;
+    const currentMod = currentRotation % 360;
+    const needed = ((targetMod - currentMod) % 360 + 360) % 360;
     const fullSpins = 360 * (7 + Math.floor(Math.random() * 4));
-    const totalDeg = fullSpins + sectorCenter;
+    const totalDeg = fullSpins + needed;
+    const targetRotation = currentRotation + totalDeg;
+    currentRotation = targetRotation;
 
     // Tick sounds during spin
     let tickInt = setInterval(() => Sound.tick(), 60);
 
     await new Promise((resolve) => {
       gsap.to(wheelEl, {
-        rotation: `+=${totalDeg}`,
+        rotation: targetRotation,
         duration: 5 + Math.random() * 2,
         ease: 'power4.out',
         onUpdate() {

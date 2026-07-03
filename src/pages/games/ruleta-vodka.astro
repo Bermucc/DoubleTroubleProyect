@@ -361,7 +361,7 @@ import Layout from '../../layouts/Layout.astro';
     buildWheel();
 
     // Calculate rotation: bring center of resultIndex sector to the pointer (top)
-    const sectorCenter = 360 - (resultIndex + 0.5) * SLICE;
+    const sectorCenter = (resultIndex + 0.5) * SLICE;
     const fullSpins = 360 * (7 + Math.floor(Math.random() * 4));
     const totalDeg = fullSpins + sectorCenter;
 

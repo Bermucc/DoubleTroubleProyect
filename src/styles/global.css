@@ -12,6 +12,10 @@
 }
 
 @layer base {
+  .color-scheme-dark {
+    color-scheme: dark;
+  }
+
   html {
     scroll-behavior: smooth;
   }
@@ -21,5 +25,38 @@
     background-color: var(--color-dt-dark);
     color: var(--color-dt-light);
     min-height: 100vh;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-dt-green);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 8px;
+    z-index: 100;
+    padding: 8px 16px;
+    background: var(--color-dt-green);
+    color: #000;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 0 0 8px 8px;
+    text-decoration: none;
+    transition: top 0.2s;
+  }
+  .skip-link:focus {
+    top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

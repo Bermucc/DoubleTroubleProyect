@@ -43,20 +43,20 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
-    <div id="hero-decoration" class="mt-16 grid grid-cols-3 gap-3 max-w-md mx-auto">
-      <div class="p-4 rounded-xl bg-dt-darker/50 border border-white/5 text-center">
-        <div class="text-2xl mb-1">🎯</div>
-        <div class="text-xs text-dt-light/40">Reflejos</div>
+      <div id="hero-decoration" class="mt-16 grid grid-cols-3 gap-3 max-w-md mx-auto">
+        <div class="p-4 rounded-xl bg-dt-darker/50 border border-white/5 text-center">
+          <div class="text-2xl mb-1" aria-hidden="true">🎯</div>
+          <div class="text-xs text-dt-light/40">Reflejos</div>
+        </div>
+        <div class="p-4 rounded-xl bg-dt-darker/50 border border-white/5 text-center">
+          <div class="text-2xl mb-1" aria-hidden="true">🧠</div>
+          <div class="text-xs text-dt-light/40">Ingenio</div>
+        </div>
+        <div class="p-4 rounded-xl bg-dt-darker/50 border border-white/5 text-center">
+          <div class="text-2xl mb-1" aria-hidden="true">🎉</div>
+          <div class="text-xs text-dt-light/40">Diversión</div>
+        </div>
       </div>
-      <div class="p-4 rounded-xl bg-dt-darker/50 border border-white/5 text-center">
-        <div class="text-2xl mb-1">🧠</div>
-        <div class="text-xs text-dt-light/40">Ingenio</div>
-      </div>
-      <div class="p-4 rounded-xl bg-dt-darker/50 border border-white/5 text-center">
-        <div class="text-2xl mb-1">🎉</div>
-        <div class="text-xs text-dt-light/40">Diversión</div>
-      </div>
-    </div>
   </section>
 
   <section class="py-24 px-4">
@@ -100,9 +100,15 @@ import Layout from '../layouts/Layout.astro';
 <script>
   import { gsap } from 'gsap';
 
-  gsap.fromTo('#hero-badge', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' });
-  gsap.fromTo('#hero-title', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
-  gsap.fromTo('#hero-desc', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, delay: 0.5, ease: 'power3.out' });
-  gsap.fromTo('#hero-cta', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, delay: 0.7, ease: 'power3.out' });
-  gsap.fromTo('#hero-decoration', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, delay: 0.9, ease: 'power3.out' });
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReduced) {
+    gsap.set('#hero-badge, #hero-title, #hero-desc, #hero-cta, #hero-decoration', { opacity: 1, y: 0 });
+  } else {
+    gsap.fromTo('#hero-badge', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' });
+    gsap.fromTo('#hero-title', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+    gsap.fromTo('#hero-desc', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, delay: 0.5, ease: 'power3.out' });
+    gsap.fromTo('#hero-cta', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, delay: 0.7, ease: 'power3.out' });
+    gsap.fromTo('#hero-decoration', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, delay: 0.9, ease: 'power3.out' });
+  }
 </script>

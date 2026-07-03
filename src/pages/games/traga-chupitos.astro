@@ -119,7 +119,7 @@ import Layout from '../../layouts/Layout.astro';
           <div class="flex items-center justify-center gap-4 sm:gap-6 mb-4">
             <button id="spin-btn" class="glass-btn group relative px-6 sm:px-8 py-2.5 rounded-full text-sm font-bold text-white uppercase tracking-wider disabled:opacity-30 disabled:cursor-not-allowed">
               <span class="relative z-10 flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 Jugar
@@ -128,7 +128,7 @@ import Layout from '../../layouts/Layout.astro';
 
             <button id="reset-btn" class="glass-btn-sm group relative px-5 py-2 rounded-full text-xs font-semibold text-zinc-400 uppercase tracking-wider">
               <span class="relative z-10 flex items-center gap-1.5">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Reset
@@ -396,6 +396,7 @@ import Layout from '../../layouts/Layout.astro';
   let symbolHeight = 56;
   let spinTweens = [];
   let buildup = 0;
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ===== SOUND ENGINE =====
   const Sound = {
@@ -745,7 +746,7 @@ import Layout from '../../layouts/Layout.astro';
     isSpinning = true;
     spinBtn.disabled = true;
     resultMsg.className = 'text-sm font-medium text-zinc-500';
-    resultMsg.textContent = '🎰 ...';
+    resultMsg.textContent = '🎰 \u2026';
     machine.classList.remove('win');
 
     killContinuous();
@@ -756,108 +757,117 @@ import Layout from '../../layouts/Layout.astro';
 
     const results = [getWeightedSymbol(), getWeightedSymbol(), getWeightedSymbol()];
 
-    // ---- LEVER PULL ----
-    Sound.leverClick();
-    fireSparks(35);
-    gsap.to(leverBall, { y: 38, duration: 0.1, ease: 'power2.in' });
-    gsap.to(leverStick, { scaleY: 0.15, transformOrigin: 'bottom center', duration: 0.1, ease: 'power2.in' });
-    machine.classList.add('shake');
-    await new Promise((r) => setTimeout(r, 100));
-    Sound.leverSpring();
-    gsap.to(leverBall, { y: 0, duration: 0.35, ease: 'bounce.out' });
-    gsap.to(leverStick, { scaleY: 1, duration: 0.35, ease: 'bounce.out' });
-    machine.classList.remove('shake');
-
-    // ---- START ALL 3 REELS ----
-    const speed = Math.max(0.35, 1 - buildup * 0.065);
-    const baseDurations = [1.8, 2.5, 4.2];
-    const isDramatic = results[0] === WIN_SYMBOL && results[1] === WIN_SYMBOL;
-
-    const [p1, p2, p3] = strips.map((el, i) => {
-      const dur = isDramatic ? 1.2 * speed : baseDurations[i] * speed;
-      const extra = isDramatic ? 4 : i === 2 ? 12 : 6;
-      return animateReelDown(el, results[i], dur, 'power4.out', extra);
-    });
-
-    let buzz = setInterval(() => Sound.reelBuzz(), 70);
-
-    if (isDramatic) {
-      const guaranteedWin = results[2] === WIN_SYMBOL;
-
-      await new Promise((r) => setTimeout(r, 500));
-      clearInterval(buzz);
-      Sound.tension();
-
-      // Snapshot current strip positions smoothly
-      const snapshots = strips.map((el, i) => {
-        gsap.killTweensOf(el);
-        const currentY = gsap.getProperty(el, 'y');
+    if (prefersReducedMotion) {
+      strips.forEach((el, i) => {
         const { targetY } = buildStrip(el, results[i]);
-        gsap.set(el, { y: currentY, overwrite: true });
-        return { el, currentY, targetY };
+        gsap.set(el, { y: targetY, overwrite: true });
       });
-
-      // Zoom all 3 reel frames via CSS class + GSAP scale
-      reelFrames.forEach((f) => f.classList.add('dramatic-glow'));
-      gsap.to(reelFrames, { scale: 1.18, duration: 0.6, ease: 'power2.inOut', overwrite: true });
-
-      const overlayText = guaranteedWin ? '¡JACKPOT!' : '¡A punto!';
-      const overlay = showTensionOverlay(overlayText);
-      resultMsg.textContent = guaranteedWin ? '🥃 ¿? ¿?' : '🥃 ¿🥃? ¿😰?';
-      resultMsg.className = 'text-lg font-bold text-dt-green-light text-center';
-
-      // ---- REEL 1: slow reveal ----
-      await new Promise((r) => setTimeout(r, 500));
-      await new Promise((r) => {
-        gsap.to(snapshots[0].el, { y: snapshots[0].targetY, duration: 1.5, ease: 'expo.out', overwrite: true, onComplete: r });
-      });
-      Sound.stopClunk();
-      resultMsg.textContent = `${results[0]} · ? · ?`;
-
-      await new Promise((r) => setTimeout(r, 350));
-
-      // ---- REEL 2: slow reveal ----
-      await new Promise((r) => {
-        gsap.to(snapshots[1].el, { y: snapshots[1].targetY, duration: 1.5, ease: 'expo.out', overwrite: true, onComplete: r });
-      });
-      Sound.stopClunk();
-      resultMsg.textContent = `${results[0]} · ${results[1]} · ¿?`;
-
-      await new Promise((r) => setTimeout(r, 250));
-
-      // ---- DRUMROLL + REEL 3 ----
-      Sound.drumroll();
-      resultMsg.textContent = '🥃 🥃 🥁...';
-
-      await new Promise((r) => {
-        gsap.to(snapshots[2].el, { y: snapshots[2].targetY, duration: 2.5, ease: 'expo.out', overwrite: true, onComplete: r });
-      });
-      Sound.stopClunk();
-
-      // Un-zoom smoothly
       reelFrames.forEach((f) => f.classList.remove('dramatic-glow'));
-      await new Promise((r) => {
-        gsap.to(reelFrames, { scale: 1, duration: 0.35, ease: 'power2.out', overwrite: true, onComplete: r });
-      });
-      overlay.remove();
+      gsap.set(reelFrames, { scale: 1 });
     } else {
-      // ---- NORMAL FLOW ----
-      await p1;
-      clearInterval(buzz);
-      Sound.stopClunk();
-      buzz = setInterval(() => Sound.reelBuzz(), 90);
-      resultMsg.textContent = `Primera: ${results[0]}`;
-      await new Promise((r) => setTimeout(r, 300));
+      // ---- LEVER PULL ----
+      Sound.leverClick();
+      fireSparks(35);
+      gsap.to(leverBall, { y: 38, duration: 0.1, ease: 'power2.in' });
+      gsap.to(leverStick, { scaleY: 0.15, transformOrigin: 'bottom center', duration: 0.1, ease: 'power2.in' });
+      machine.classList.add('shake');
+      await new Promise((r) => setTimeout(r, 100));
+      Sound.leverSpring();
+      gsap.to(leverBall, { y: 0, duration: 0.35, ease: 'bounce.out' });
+      gsap.to(leverStick, { scaleY: 1, duration: 0.35, ease: 'bounce.out' });
+      machine.classList.remove('shake');
 
-      await p2;
-      clearInterval(buzz);
-      Sound.stopClunk();
-      buzz = setInterval(() => Sound.reelBuzz(), 110);
-      resultMsg.textContent = `${results[0]} · ${results[1]} · ?`;
+      // ---- START ALL 3 REELS ----
+      const speed = Math.max(0.35, 1 - buildup * 0.065);
+      const baseDurations = [1.8, 2.5, 4.2];
+      const isDramatic = results[0] === WIN_SYMBOL && results[1] === WIN_SYMBOL;
 
-      await p3;
-      clearInterval(buzz);
-      Sound.stopClunk();
+      const [p1, p2, p3] = strips.map((el, i) => {
+        const dur = isDramatic ? 1.2 * speed : baseDurations[i] * speed;
+        const extra = isDramatic ? 4 : i === 2 ? 12 : 6;
+        return animateReelDown(el, results[i], dur, 'power4.out', extra);
+      });
+
+      let buzz = setInterval(() => Sound.reelBuzz(), 70);
+
+      if (isDramatic) {
+        const guaranteedWin = results[2] === WIN_SYMBOL;
+
+        await new Promise((r) => setTimeout(r, 500));
+        clearInterval(buzz);
+        Sound.tension();
+
+        // Snapshot current strip positions smoothly
+        const snapshots = strips.map((el, i) => {
+          gsap.killTweensOf(el);
+          const currentY = gsap.getProperty(el, 'y');
+          const { targetY } = buildStrip(el, results[i]);
+          gsap.set(el, { y: currentY, overwrite: true });
+          return { el, currentY, targetY };
+        });
+
+        // Zoom all 3 reel frames via CSS class + GSAP scale
+        reelFrames.forEach((f) => f.classList.add('dramatic-glow'));
+        gsap.to(reelFrames, { scale: 1.18, duration: 0.6, ease: 'power2.inOut', overwrite: true });
+
+        const overlayText = guaranteedWin ? '¡JACKPOT!' : '¡A punto!';
+        const overlay = showTensionOverlay(overlayText);
+        resultMsg.textContent = guaranteedWin ? '🥃 ¿? ¿?' : '🥃 ¿🥃? ¿😰?';
+        resultMsg.className = 'text-lg font-bold text-dt-green-light text-center';
+
+        // ---- REEL 1: slow reveal ----
+        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => {
+          gsap.to(snapshots[0].el, { y: snapshots[0].targetY, duration: 1.5, ease: 'expo.out', overwrite: true, onComplete: r });
+        });
+        Sound.stopClunk();
+        resultMsg.textContent = `${results[0]} · ? · ?`;
+
+        await new Promise((r) => setTimeout(r, 350));
+
+        // ---- REEL 2: slow reveal ----
+        await new Promise((r) => {
+          gsap.to(snapshots[1].el, { y: snapshots[1].targetY, duration: 1.5, ease: 'expo.out', overwrite: true, onComplete: r });
+        });
+        Sound.stopClunk();
+        resultMsg.textContent = `${results[0]} · ${results[1]} · ¿?`;
+
+        await new Promise((r) => setTimeout(r, 250));
+
+        // ---- DRUMROLL + REEL 3 ----
+        Sound.drumroll();
+        resultMsg.textContent = '🥃 🥃 🥁\u2026';
+
+        await new Promise((r) => {
+          gsap.to(snapshots[2].el, { y: snapshots[2].targetY, duration: 2.5, ease: 'expo.out', overwrite: true, onComplete: r });
+        });
+        Sound.stopClunk();
+
+        // Un-zoom smoothly
+        reelFrames.forEach((f) => f.classList.remove('dramatic-glow'));
+        await new Promise((r) => {
+          gsap.to(reelFrames, { scale: 1, duration: 0.35, ease: 'power2.out', overwrite: true, onComplete: r });
+        });
+        overlay.remove();
+      } else {
+        // ---- NORMAL FLOW ----
+        await p1;
+        clearInterval(buzz);
+        Sound.stopClunk();
+        buzz = setInterval(() => Sound.reelBuzz(), 90);
+        resultMsg.textContent = `Primera: ${results[0]}`;
+        await new Promise((r) => setTimeout(r, 300));
+
+        await p2;
+        clearInterval(buzz);
+        Sound.stopClunk();
+        buzz = setInterval(() => Sound.reelBuzz(), 110);
+        resultMsg.textContent = `${results[0]} · ${results[1]} · ?`;
+
+        await p3;
+        clearInterval(buzz);
+        Sound.stopClunk();
+      }
     }
 
     // ---- RESULT ----

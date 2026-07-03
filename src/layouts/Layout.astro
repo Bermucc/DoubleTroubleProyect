@@ -12,7 +12,7 @@ const { title = 'Double Trouble Company', description = 'Party games for you and
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang="es" class="color-scheme-dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -22,14 +22,18 @@ const { title = 'Double Trouble Company', description = 'Party games for you and
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0A0A0F" />
     <title>{title}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" /></noscript>
   </head>
   <body class="flex flex-col min-h-screen">
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
     <Header />
-    <main class="flex-1">
+    <main id="main-content" class="flex-1">
       <slot />
     </main>
     <Footer />
